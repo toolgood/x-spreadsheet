@@ -1,4 +1,5 @@
 import { expr2xy, xy2expr } from './alphabet';
+import { numberCalc } from './helper';
 
 // Converting infix expression to a suffix expression
 // src: AVERAGE(SUM(A1,A2), B1) + 50 + B20
@@ -10,9 +11,9 @@ const infixExprToSuffixExpr = (src) => {
   let fnArgType = 0; // 1 => , 2 => :
   let fnArgOperator = '';
   let fnArgsLen = 1; // A1,A2,A3...
+  let oldc = '';
   for (let i = 0; i < src.length; i += 1) {
     const c = src.charAt(i);
-    // console.log('c:', c);
     if (c !== ' ') {
       if (c >= 'a' && c <= 'z') {
         subStrs.push(c.toUpperCase());
@@ -26,6 +27,8 @@ const infixExprToSuffixExpr = (src) => {
         }
         stack.push(`"${subStrs.join('')}`);
         subStrs = [];
+      } else if (c === '-' && /[+\-*/,(]/.test(oldc)) {
+        subStrs.push(c);
       } else {
         // console.log('subStrs:', subStrs.join(''), stack);
         if (c !== '(' && subStrs.length > 0) {
@@ -67,7 +70,7 @@ const infixExprToSuffixExpr = (src) => {
         } else if (c === '=' || c === '>' || c === '<') {
           const nc = src.charAt(i + 1);
           fnArgOperator = c;
-          if (nc === '=') {
+          if (nc === '=' || nc === '-') {
             fnArgOperator += nc;
             i += 1;
           }
@@ -101,6 +104,7 @@ const infixExprToSuffixExpr = (src) => {
         }
         subStrs = [];
       }
+      oldc = c;
     }
   }
   if (subStrs.length > 0) {
@@ -113,14 +117,21 @@ const infixExprToSuffixExpr = (src) => {
 };
 
 const evalSubExpr = (subExpr, cellRender) => {
-  if (subExpr[0] >= '0' && subExpr[0] <= '9') {
-    return Number(subExpr);
-  }
-  if (subExpr[0] === '"') {
+  const [fl] = subExpr;
+  let expr = subExpr;
+  if (fl === '"') {
     return subExpr.substring(1);
   }
-  const [x, y] = expr2xy(subExpr);
-  return cellRender(x, y);
+  let ret = 1;
+  if (fl === '-') {
+    expr = subExpr.substring(1);
+    ret = -1;
+  }
+  if (expr[0] >= '0' && expr[0] <= '9') {
+    return ret * Number(expr);
+  }
+  const [x, y] = expr2xy(expr);
+  return ret * cellRender(x, y);
 };
 
 // evaluate the suffix expression
@@ -136,29 +147,46 @@ const evalSuffixExpr = (srcStack, formulaMap, cellRender, cellList) => {
     const fc = expr[0];
     if (expr === '+') {
       const top = stack.pop();
-      stack.push(Number(stack.pop()) + Number(top));
+      stack.push(numberCalc('+', stack.pop(), top));
     } else if (expr === '-') {
-      const top = stack.pop();
-      stack.push(Number(stack.pop()) - Number(top));
+      if (stack.length === 1) {
+        const top = stack.pop();
+        stack.push(numberCalc('*', top, -1));
+      } else {
+        const top = stack.pop();
+        stack.push(numberCalc('-', stack.pop(), top));
+      }
     } else if (expr === '*') {
-      stack.push(Number(stack.pop()) * Number(stack.pop()));
+      stack.push(numberCalc('*', stack.pop(), stack.pop()));
     } else if (expr === '/') {
       const top = stack.pop();
-      stack.push(Number(stack.pop()) / Number(top));
+      stack.push(numberCalc('/', stack.pop(), top));
     } else if (fc === '=' || fc === '>' || fc === '<') {
-      const top = stack.pop();
-      const Fn = Function;
-      stack.push(new Fn(`return ${stack.pop()} ${expr === '=' ? '==' : expr} ${top}`)());
+      let top = stack.pop();
+      if (!Number.isNaN(top)) top = Number(top);
+      let left = stack.pop();
+      if (!Number.isNaN(left)) left = Number(left);
+      let ret = false;
+      if (fc === '=') {
+        ret = (left === top);
+      } else if (expr === '>') {
+        ret = (left > top);
+      } else if (expr === '>=') {
+        ret = (left >= top);
+      } else if (expr === '<') {
+        ret = (left < top);
+      } else if (expr === '<=') {
+        ret = (left <= top);
+      }
+      stack.push(ret);
     } else if (Array.isArray(expr)) {
       const [formula, len] = expr;
       const params = [];
       for (let j = 0; j < len; j += 1) {
         params.push(stack.pop());
       }
-      // console.log('::::params:', formulaMap, expr,  formula, params);
       stack.push(formulaMap[formula].render(params.reverse()));
     } else {
-      // console.log('cellList:', cellList, expr);
       if (cellList.includes(expr)) {
         return 0;
       }
@@ -166,6 +194,7 @@ const evalSuffixExpr = (srcStack, formulaMap, cellRender, cellList) => {
         cellList.push(expr);
       }
       stack.push(evalSubExpr(expr, cellRender));
+      cellList.pop();
     }
     // console.log('stack:', stack);
   }

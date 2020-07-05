@@ -26,12 +26,11 @@ function tableFixedHeaderStyle() {
   };
 }
 
-function getDrawBox(rindex, cindex) {
-  const { data } = this;
+function getDrawBox(data, rindex, cindex, yoffset = 0) {
   const {
     left, top, width, height,
   } = data.cellRect(rindex, cindex);
-  return new DrawBox(left, top, width, height, cellPaddingWidth);
+  return new DrawBox(left, top + yoffset, width, height, cellPaddingWidth);
 }
 /*
 function renderCellBorders(bboxes, translateFunc) {
@@ -50,9 +49,9 @@ function renderCellBorders(bboxes, translateFunc) {
 }
 */
 
-function renderCell(rindex, cindex) {
-  const { draw, data } = this;
-  const { sortedRowMap } = data;
+export function renderCell(draw, data, rindex, cindex, yoffset = 0) {
+  const { sortedRowMap, rows, cols } = data;
+  if (rows.isHide(rindex) || cols.isHide(cindex)) return;
   let nrindex = rindex;
   if (sortedRowMap.has(rindex)) {
     nrindex = sortedRowMap.get(rindex);
@@ -60,10 +59,13 @@ function renderCell(rindex, cindex) {
 
   const cell = data.getCell(nrindex, cindex);
   if (cell === null) return;
+  let frozen = false;
+  if ('editable' in cell && cell.editable === false) {
+    frozen = true;
+  }
 
   const style = data.getCellStyleOrDefault(nrindex, cindex);
-  // console.log('style:', style);
-  const dbox = getDrawBox.call(this, rindex, cindex);
+  const dbox = getDrawBox(data, rindex, cindex, yoffset);
   dbox.bgcolor = style.bgcolor;
   if (style.border !== undefined) {
     dbox.setBorders(style.border);
@@ -94,6 +96,9 @@ function renderCell(rindex, cindex) {
       // console.log('error:', rindex, cindex, error);
       draw.error(dbox);
     }
+    if (frozen) {
+      draw.frozen(dbox);
+    }
   });
 }
 
@@ -105,7 +110,7 @@ function renderAutofilter(viewRange) {
     const afRange = autoFilter.hrange();
     if (viewRange.intersects(afRange)) {
       afRange.each((ri, ci) => {
-        const dbox = getDrawBox.call(this, ri, ci);
+        const dbox = getDrawBox(data, ri, ci);
         draw.dropdown(dbox);
       });
     }
@@ -134,7 +139,7 @@ function renderContent(viewRange, fw, fh, tx, ty) {
   draw.save();
   draw.translate(0, -exceptRowTotalHeight);
   viewRange.each((ri, ci) => {
-    renderCell.call(this, ri, ci);
+    renderCell(draw, data, ri, ci);
   }, ri => filteredTranslateFunc(ri));
   draw.restore();
 
@@ -145,7 +150,7 @@ function renderContent(viewRange, fw, fh, tx, ty) {
   draw.translate(0, -exceptRowTotalHeight);
   data.eachMergesInView(viewRange, ({ sri, sci, eri }) => {
     if (!exceptRowSet.has(sri)) {
-      renderCell.call(this, sri, sci);
+      renderCell(draw, data, sri, sci);
     } else if (!rset.has(sri)) {
       rset.add(sri);
       const height = data.rows.sumHeight(sri, eri + 1);
@@ -204,6 +209,12 @@ function renderFixedHeaders(type, viewRange, w, h, tx, ty) {
         renderSelectedHeaderCell.call(this, 0, y, w, rowHeight);
       }
       draw.fillText(ii + 1, w / 2, y + (rowHeight / 2));
+      if (i > 0 && data.rows.isHide(i - 1)) {
+        draw.save();
+        draw.attr({ strokeStyle: '#c6c6c6' });
+        draw.line([5, y + 5], [w - 5, y + 5]);
+        draw.restore();
+      }
     });
     draw.line([0, sumHeight + nty], [w, sumHeight + nty]);
     draw.line([w, nty], [w, sumHeight + nty]);
@@ -218,6 +229,12 @@ function renderFixedHeaders(type, viewRange, w, h, tx, ty) {
         renderSelectedHeaderCell.call(this, x, 0, colWidth, h);
       }
       draw.fillText(stringAt(ii), x + (colWidth / 2), h / 2);
+      if (i > 0 && data.cols.isHide(i - 1)) {
+        draw.save();
+        draw.attr({ strokeStyle: '#c6c6c6' });
+        draw.line([x + 5, 5], [x + 5, h - 5]);
+        draw.restore();
+      }
     });
     draw.line([sumWidth + ntx, 0], [sumWidth + ntx, h]);
     draw.line([0, h], [sumWidth + ntx, h]);
@@ -282,6 +299,11 @@ class Table {
     this.el = el;
     this.draw = new Draw(el, data.viewWidth(), data.viewHeight());
     this.data = data;
+  }
+
+  resetData(data) {
+    this.data = data;
+    this.render();
   }
 
   render() {

@@ -20,6 +20,7 @@ import Freeze from './freeze';
 import Merge from './merge';
 import Redo from './redo';
 import Undo from './undo';
+import Print from './print';
 import Textwrap from './textwrap';
 import More from './more';
 
@@ -90,6 +91,7 @@ export default class Toolbar {
       [
         this.undoEl = new Undo(),
         this.redoEl = new Redo(),
+        new Print(),
         this.paintformatEl = new Paintformat(),
         this.clearformatEl = new Clearformat(),
       ],
@@ -174,11 +176,15 @@ export default class Toolbar {
     this[`${type}El`].click();
   }
 
+  resetData(data) {
+    this.data = data;
+    this.reset();
+  }
+
   reset() {
     if (this.isHide) return;
     const { data } = this;
     const style = data.getSelectedCellStyle();
-    const cell = data.getSelectedCell();
     // console.log('canUndo:', data.canUndo());
     this.undoEl.setState(!data.canUndo());
     this.redoEl.setState(!data.canRedo());
@@ -186,7 +192,8 @@ export default class Toolbar {
     this.autofilterEl.setState(!data.canAutofilter());
     // this.mergeEl.disabled();
     // console.log('selectedCell:', style, cell);
-    const { font } = style;
+    const { font, format } = style;
+    this.formatEl.setState(format);
     this.fontEl.setState(font.name);
     this.fontSizeEl.setState(font.size);
     this.boldEl.setState(font.bold);
@@ -200,10 +207,5 @@ export default class Toolbar {
     this.textwrapEl.setState(style.textwrap);
     // console.log('freeze is Active:', data.freezeIsActive());
     this.freezeEl.setState(data.freezeIsActive());
-    if (cell) {
-      if (cell.format) {
-        this.formatEl.setState(cell.format);
-      }
-    }
   }
 }

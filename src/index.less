@@ -117,7 +117,7 @@ body {
     border-collapse: separate;
     border-spacing: 2;
     background: #fff;
-    
+
     td {
       margin: 0;
       cursor: pointer;
@@ -213,6 +213,21 @@ body {
     }
   }
 
+  &.top-left {
+    .@{css-prefix}-dropdown-content {
+      bottom: calc(~'100% + 5px');
+      left: 0;
+    }
+  }
+
+  &.top-right {
+    .@{css-prefix}-dropdown-content {
+      bottom: calc(~'100% + 5px');
+      right: 0;
+    }
+  }
+
+
   .@{css-prefix}-dropdown-title {
     padding: 0 5px;
     display: inline-block;
@@ -307,6 +322,7 @@ body {
 }
 
 .@{css-prefix}-editor, .@{css-prefix}-selector {
+  box-sizing: content-box;
   position: absolute;
   overflow: hidden;
   pointer-events: none;
@@ -318,10 +334,20 @@ body {
 
 /* @{css-prefix}-selector */
 .@{css-prefix}-selector {
+  .hide-input {
+    position: absolute;
+    z-index: 0;
+    input {
+      padding: 0;
+      width: 0;
+      border: none!important;
+    }
+  }
   .@{css-prefix}-selector-area {
     position: absolute;
     border: 2px solid rgb(75, 137, 255);
     background: rgba(75, 137, 255, .1);
+    z-index: 5;
   }
   .@{css-prefix}-selector-clipboard, .@{css-prefix}-selector-autofill {
     position: absolute;
@@ -356,12 +382,12 @@ body {
     line-height: 0;
     z-index: 100;
     pointer-events: auto;
-  
+
     textarea {
       box-sizing: content-box;
       border: none;
       padding: 0 3px;
-      outline-width: 0;
+      outline: none;
       resize: none;
       text-align: start;
       overflow-y: hidden;
@@ -372,7 +398,7 @@ body {
       line-height: 22px;
       margin: 0;
     }
-  
+
     .textline {
       overflow: hidden;
       visibility: hidden;
@@ -395,6 +421,7 @@ body {
   padding: 2px 10px;
   cursor: default;
   text-align: left;
+  overflow: hidden;
 
   &.disabled {
     pointer-events: none;
@@ -406,7 +433,7 @@ body {
   }
 
   // &.active {
-  ////   background: #89aef53d;
+    ////   background: #89aef53d;
   // }
 
   &.divider {
@@ -467,22 +494,22 @@ body {
 }
 
 .@{css-prefix}-checkbox {
-    position: relative;
-    display: inline-block;
-    backface-visibility: hidden;
+  position: relative;
+  display: inline-block;
+  backface-visibility: hidden;
+  outline: 0;
+  vertical-align: baseline;
+  font-style: normal;
+  font-size: 1rem;
+  line-height: 1em;
+  > input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0!important;
     outline: 0;
-    vertical-align: baseline;
-    font-style: normal;
-    font-size: 1rem;
-    line-height: 1em;
-    > input {
-      position: absolute;
-      top: 0;
-      left: 0;
-      opacity: 0!important;
-      outline: 0;
-      z-index: -1;
-    }
+    z-index: -1;
+  }
 }
 
 .@{css-prefix}-suggest,
@@ -538,7 +565,57 @@ body {
 }
 
 .@{css-prefix}-bottombar {
+  position: relative;
   border-top: 1px solid #e0e2e4;
+
+  .@{css-prefix}-menu > li {
+    line-height: 40px;
+    height: 40px;
+    padding-top: 0;
+    padding-bottom: 0;
+    vertical-align: middle;
+    border-right: 1px solid #e8eaed;
+  }
+}
+
+.@{css-prefix}-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+.@{css-prefix}-menu > li {
+  float: left;
+  line-height: 1.25em;
+  padding: .785em 1em;
+  margin: 0;
+  vertical-align: middle;
+  text-align: left;
+  font-weight: 400;
+  color: #80868b;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all .3s;
+  font-weight: bold;
+
+  &.active {
+    background-color: #fff;
+    color: rgba(0, 0, 0, .65);
+  }
+
+  .@{css-prefix}-icon {
+    margin: 0 6px;
+
+    .@{css-prefix}-icon-img {
+      &:hover {
+        opacity: .85;
+      }
+    }
+  }
+
+  .@{css-prefix}-dropdown {
+    display: inline-block;
+  }
 }
 
 .@{css-prefix}-toolbar {
@@ -588,11 +665,73 @@ body {
   margin: 12px 3px 0;
 }
 
+.@{css-prefix}-print {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.@{css-prefix}-print-bar {
+  background: #424242;
+  height: 60px;
+  line-height: 60px;
+  padding: 0 30px;
+
+  .-title {
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.2em;
+    float: left;
+  }
+
+  .-right {
+    float: right;
+    margin-top: 12px;
+  }
+}
+.@{css-prefix}-print-content {
+  display: flex;
+  flex: auto;
+  flex-direction: row;
+  background: #d0d0d0;
+  height: calc(100% - 60px);
+
+  .-sider {
+    flex: 0 0 300px;
+    width: 300px;
+    border-left: 2px solid #ccc;
+    background: #fff;
+  }
+
+  .-content {
+    flex: auto;
+    overflow-x: auto;
+    overflow-y: scroll;
+    height: 100%;
+  }
+}
+
+
+.@{css-prefix}-canvas-card-wraper {
+  margin: 40px 20px;
+}
+.@{css-prefix}-canvas-card {
+  background: #fff;
+  margin: auto;
+  page-break-before: auto;
+  page-break-after: always;
+  box-shadow: 0 8px 10px 1px rgba(0,0,0,0.14), 0 3px 14px 3px rgba(0,0,0,0.12), 0 4px 5px 0 rgba(0,0,0,0.20);
+}
+
 .@{css-prefix}-calendar {
   color: rgba(0,0,0,.65);
   background: #ffffff;
   user-select: none;
-  
+
   .calendar-header {
     font-weight: 700;
     line-height: 30px;
@@ -608,7 +747,7 @@ body {
 
     .calendar-header-right {
       float: right;
-      
+
       a {
         padding: 3px 0;
         margin-right: 2px;
@@ -619,11 +758,11 @@ body {
       }
     }
   }
-  
+
   .calendar-body {
     border-collapse: collapse;
     border-spacing: 0;
-    
+
     th, td {
       width: 100%/7;
       min-width: 32px;
@@ -632,19 +771,19 @@ body {
       line-height: 30px;
       padding: 0;
     }
-    
+
     td > .cell {
       // border: 1px solid rgba(0,0,0,.05);
-      
+
       &:hover {
         background: #ecf6fd;
       }
-      
+
       &.active, &.active:hover {
         background: #ecf6fd;
         color: #2185D0;
       }
-      
+
       &.disabled {
         pointer-events: none;
         opacity: 0.5;
@@ -654,12 +793,12 @@ body {
 }
 
 .@{css-prefix}-datepicker {
-    box-shadow: 2px 2px 5px rgba(0,0,0,.2);
-    position: absolute;
-    left: 0;
-    top: calc(100% + 5px);
-    z-index: 10;
-    width: auto;
+  box-shadow: 2px 2px 5px rgba(0,0,0,.2);
+  position: absolute;
+  left: 0;
+  top: calc(100% + 5px);
+  z-index: 10;
+  width: auto;
 }
 
 .@{css-prefix}-buttons {
@@ -710,7 +849,7 @@ body {
   font-weight: 400;
   display: inline-flex;
   color: rgba(0,0,0,.87);
-  
+
   input {
     z-index: 1;
     margin: 0;
@@ -816,6 +955,27 @@ body {
   }
 }
 
+form fieldset {
+  border: none;
+
+  label {
+    display: block;
+    margin-bottom: .5em;
+    font-size: 1em;
+    color: #666;
+  }
+
+  select {
+    font-size: 1.1em;
+    width: 100%;
+    background-color: #fff;
+    border: none;
+    border-bottom: 2px solid #ddd;
+    padding: .5em .85em;
+    border-radius: 2px;
+  }
+}
+
 .@{css-prefix}-modal, .@{css-prefix}-toast {
   font-size: 13px;
   position: fixed;
@@ -848,7 +1008,7 @@ body {
     right: .8em;
     top: .65em;
     border-radius: 18px;
-    
+
     &:hover {
       opacity: 1;
       background: rgba(0, 0, 0, 0.08);

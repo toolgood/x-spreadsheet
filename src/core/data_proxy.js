@@ -69,6 +69,7 @@ import { t } from '../locale/locale';
  * }
  */
 const defaultSettings = {
+  mode: 'edit', // edit | read
   view: {
     height: () => document.documentElement.clientHeight,
     width: () => document.documentElement.clientWidth,
@@ -100,10 +101,12 @@ const defaultSettings = {
       bold: false,
       italic: false,
     },
+    format: 'normal',
   },
 };
 
 const toolbarHeight = 41;
+const bottombarHeight = 41;
 
 
 // src: cellRange
@@ -159,7 +162,7 @@ function setStyleBorder(ri, ci, bss) {
   if (cell.style !== undefined) {
     cstyle = helper.cloneDeep(styles[cell.style]);
   }
-  Object.assign(cstyle, { border: bss });
+  cstyle = helper.merge(cstyle, { border: bss });
   cell.style = this.addStyle(cstyle);
 }
 
@@ -422,6 +425,15 @@ export default class DataProxy {
     return true;
   }
 
+  pasteFromText(txt) {
+    const lines = txt.split('\r\n').map(it => it.replace(/"/g, '').split('\t'));
+    if (lines.length > 0) lines.length -= 1;
+    const { rows, selector } = this;
+    this.changeData(() => {
+      rows.paste(lines, selector.range);
+    });
+  }
+
   autofill(cellRange, what, error = () => {}) {
     const srcRange = this.selector.range;
     if (!canPaste.call(this, srcRange, cellRange, error)) return false;
@@ -531,6 +543,8 @@ export default class DataProxy {
             || property === 'color' || property === 'bgcolor') {
             cstyle[property] = value;
             cell.style = this.addStyle(cstyle);
+          } else {
+            cell[property] = value;
           }
         });
       }
@@ -966,6 +980,7 @@ export default class DataProxy {
   viewHeight() {
     const { view, showToolbar } = this.settings;
     let h = view.height();
+    h -= bottombarHeight;
     if (showToolbar) {
       h -= toolbarHeight;
     }
@@ -979,6 +994,14 @@ export default class DataProxy {
   freezeViewRange() {
     const [ri, ci] = this.freeze;
     return new CellRange(0, 0, ri - 1, ci - 1, this.freezeTotalWidth(), this.freezeTotalHeight());
+  }
+
+  contentRange() {
+    const { rows, cols } = this;
+    const [ri, ci] = rows.maxCell();
+    const h = rows.sumHeight(0, ri + 1);
+    const w = cols.sumWidth(0, ci + 1);
+    return new CellRange(0, 0, ri, ci, w, h);
   }
 
   exceptRowTotalHeight(sri, eri) {
@@ -998,6 +1021,7 @@ export default class DataProxy {
     const {
       scroll, rows, cols, freeze, exceptRowSet,
     } = this;
+    // console.log('scroll:', scroll, ', freeze:', freeze)
     let { ri, ci } = scroll;
     if (ri <= 0) [ri] = freeze;
     if (ci <= 0) [, ci] = freeze;
@@ -1025,6 +1049,29 @@ export default class DataProxy {
       .forEach(it => cb(it));
   }
 
+  hideRowsOrCols() {
+    const { rows, cols, selector } = this;
+    const [rlen, clen] = selector.size();
+    const {
+      sri, sci, eri, eci,
+    } = selector.range;
+    if (rlen === rows.len) {
+      for (let ci = sci; ci <= eci; ci += 1) {
+        cols.setHide(ci, true);
+      }
+    } else if (clen === cols.len) {
+      for (let ri = sri; ri <= eri; ri += 1) {
+        rows.setHide(ri, true);
+      }
+    }
+  }
+
+  // type: row | col
+  // index row-index | col-index
+  unhideRowsOrCols(type, index) {
+    this[`${type}s`].unhide(index);
+  }
+
   rowEach(min, max, cb) {
     let y = 0;
     const { rows } = this;
@@ -1042,9 +1089,11 @@ export default class DataProxy {
         offset += 1;
       } else {
         const rowHeight = rows.getHeight(i);
-        cb(i, y, rowHeight);
-        y += rowHeight;
-        if (y > this.viewHeight()) break;
+        if (rowHeight > 0) {
+          cb(i, y, rowHeight);
+          y += rowHeight;
+          if (y > this.viewHeight()) break;
+        }
       }
     }
   }
@@ -1054,9 +1103,11 @@ export default class DataProxy {
     const { cols } = this;
     for (let i = min; i <= max; i += 1) {
       const colWidth = cols.getWidth(i);
-      cb(i, x, colWidth);
-      x += colWidth;
-      if (x > this.viewWidth()) break;
+      if (colWidth > 0) {
+        cb(i, x, colWidth);
+        x += colWidth;
+        if (x > this.viewWidth()) break;
+      }
     }
   }
 
@@ -1089,6 +1140,8 @@ export default class DataProxy {
       } else if (property === 'freeze') {
         const [x, y] = expr2xy(d[property]);
         this.freeze = [y, x];
+      } else if (property === 'autofilter') {
+        this.autoFilter.setData(d[property]);
       } else if (d[property] !== undefined) {
         this[property] = d[property];
       }

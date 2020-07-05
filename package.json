@@ -1,7 +1,8 @@
 {
   "name": "x-data-spreadsheet",
-  "version": "1.0.26",
+  "version": "1.1.4",
   "description": "a javascript xpreadsheet",
+  "types": "src/index.d.ts",
   "main": "src/index.js",
   "files": [
     "assets",
@@ -29,7 +30,8 @@
     "build-locale": "webpack --config build/webpack.locale.js",
     "lint": "./node_modules/eslint/bin/eslint.js src",
     "test": "nyc ./node_modules/mocha/bin/mocha --require @babel/register test/*",
-    "coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov -t 31ecdb12-8ecb-46f7-a486-65c2516307dd"
+    "coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov -t 31ecdb12-8ecb-46f7-a486-65c2516307dd",
+    "postinstall": "opencollective-postinstall"
   },
   "keywords": [
     "javascript",
@@ -45,7 +47,7 @@
     "clean-webpack-plugin": "^0.1.19",
     "codecov": "^3.3.0",
     "css-loader": "^1.0.0",
-    "eslint": "^5.5.0",
+    "eslint": "^6.8.0",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-plugin-import": "^2.14.0",
     "file-loader": "^2.0.0",
@@ -58,8 +60,15 @@
     "style-loader": "^0.23.0",
     "webpack": "^4.29.6",
     "webpack-cli": "^3.1.0",
-    "webpack-dev-server": "^3.1.14",
+    "webpack-dev-server": "^3.10.2",
     "webpack-merge": "^4.1.4"
   },
-  "dependencies": {}
+  "dependencies": {
+    "opencollective": "^1.0.3",
+    "opencollective-postinstall": "^2.0.2"
+  },
+  "collective": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/x-spreadsheet"
+  }
 }

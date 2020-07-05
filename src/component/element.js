@@ -90,6 +90,10 @@ class Element {
     return this;
   }
 
+  removeChild(el) {
+    this.el.removeChild(el);
+  }
+
   /*
   first() {
     return this.el.firstChild;
@@ -220,6 +224,10 @@ class Element {
       return this;
     }
     return this.el.value;
+  }
+
+  focus() {
+    this.el.focus();
   }
 
   cssRemoveKeys(...keys) {
